@@ -1,6 +1,6 @@
 Flask
 gunicorn
-tflite-runtime==2.14.0
+tensorflow==2.16.1
 numpy==1.26.4
 opencv-python-headless
 Pillow
