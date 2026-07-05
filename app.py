@@ -1,11 +1,19 @@
 from flask import Flask, render_template, request
-import tensorflow as tf
 import numpy as np
 import os
 import cv2
 import uuid
 from werkzeug.utils import secure_filename
-from tensorflow.keras.preprocessing import image
+from PIL import Image
+
+# Load TFLite interpreter with fallback to tensorflow
+try:
+    import tflite_runtime.interpreter as tflite
+except ImportError:
+    try:
+        from tensorflow import lite as tflite
+    except ImportError:
+        raise ImportError("Neither tflite_runtime nor tensorflow is installed.")
 
 app = Flask(__name__)
 
@@ -21,7 +29,11 @@ ALLOWED_EXTENSIONS = (".png", ".jpg", ".jpeg")
 # =========================
 # Load Model
 # =========================
-model = tf.keras.models.load_model("leaf_nutrient_model.h5")
+interpreter = tflite.Interpreter(model_path="leaf_nutrient_model.tflite")
+interpreter.allocate_tensors()
+
+input_details = interpreter.get_input_details()
+output_details = interpreter.get_output_details()
 
 CLASS_NAMES = ["Healthy", "Nitrogen", "Phosphorus", "Potassium"]
 
@@ -116,11 +128,19 @@ def predict():
     # =========================
     # Nutrient Prediction
     # =========================
-    img = image.load_img(file_path, target_size=(224, 224))
-    img_array = image.img_to_array(img) / 255.0
+    # Load and preprocess image using Pillow (equivalent to Keras load_img/img_to_array)
+    img_pil = Image.open(file_path)
+    if img_pil.mode != 'RGB':
+        img_pil = img_pil.convert('RGB')
+    img_pil = img_pil.resize((224, 224), Image.NEAREST)
+    img_array = np.array(img_pil).astype(np.float32) / 255.0
     img_array = np.expand_dims(img_array, axis=0)
 
-    predictions = model.predict(img_array)[0]
+    # Run TFLite prediction
+    interpreter.set_tensor(input_details[0]['index'], img_array)
+    interpreter.invoke()
+    predictions = interpreter.get_tensor(output_details[0]['index'])[0].copy()
+
     predicted_index = np.argmax(predictions)
     predicted_class = CLASS_NAMES[predicted_index]
     confidence = round(float(predictions[predicted_index]) * 100, 2)
