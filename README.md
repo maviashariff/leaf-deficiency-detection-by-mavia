@@ -3,6 +3,7 @@
 An intelligent machine learning-based web application designed to detect nutrient deficiencies (Nitrogen, Phosphorus, Potassium) in plant leaves through image analysis. Built with Python, Flask, and TensorFlow Lite, and features a responsive UI styled with Tailwind CSS.
 
 Developed by [Mavia shariff](https://maviashariff.github.io/MavsPortfolio/#home).
+Live [Link](https://leaf-deficiency-detection-by-mavia.onrender.com).
 
 ## Features
 - **Nutrient Detection**: Accurately classifies images into Healthy, Nitrogen, Phosphorus, or Potassium deficient.
